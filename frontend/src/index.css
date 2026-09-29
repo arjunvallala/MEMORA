@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #f9f8f6;
+    color: #1a1918;
+    font-family: 'Yanone Kaffeesatz', sans-serif;
+    font-size: 1.125rem;
+    letter-spacing: 0.015em;
+  }
+
+  h1, h2, h3, .font-heading {
+    font-family: 'Fondamento', serif;
+  }
+}
+
+/* Custom scrollbars for clean technical aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f1ec;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d5d0c3;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b5b0a3;
+}
