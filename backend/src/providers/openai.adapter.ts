@@ -59,7 +59,7 @@ export class OpenAIAdapter {
           systemPrompt,
           history,
           userMessage,
-          'google/gemini-2.0-flash-001'
+          config.providers.openrouter.defaultModel || 'minimax/minimax-m3'
         );
       } catch (err: any) {
         console.warn('[OpenAIAdapter] OpenRouter fallback failed:', err.message);

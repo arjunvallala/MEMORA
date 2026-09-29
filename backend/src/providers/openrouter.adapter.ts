@@ -40,7 +40,7 @@ export class OpenRouterAdapter {
         body: JSON.stringify({
           model: modelName,
           messages,
-          max_tokens: 1024,
+          max_tokens: 500,
           temperature: 0.7
         })
       });

@@ -221,8 +221,19 @@ export class AgentRuntime {
     agentResponse: string,
     agentId: AgentId
   ): { content: string; category: MemoryCategory } | null {
-    const userLower = userText.toLowerCase();
+    const userLower = userText.toLowerCase().trim();
     const respLower = agentResponse.toLowerCase();
+
+    // Do NOT retain trivial greetings or short non-informative phrases
+    const trivialGreetings = ['hello', 'hi', 'hey', 'test', 'ok', 'thanks', 'thank you', 'good morning', 'good evening'];
+    if (trivialGreetings.includes(userLower) || userLower.length < 3) {
+      return null;
+    }
+
+    // Do NOT retain if response came from fallback engine template
+    if (respLower.includes('review complete') || respLower.includes('monitoring team memory') || respLower.includes('fallback')) {
+      return null;
+    }
 
     // 1. User identity / name / preference extraction
     if (
@@ -274,12 +285,11 @@ export class AgentRuntime {
       };
     }
 
-    // 5. Dynamic fallback: if response claims Hindsight memory was updated
+    // 5. Explicit retention confirmation in agent response
     if (
-      respLower.includes('hindsight') ||
       respLower.includes('updated our shared memory') ||
-      respLower.includes('saved to memory') ||
-      respLower.includes('stored this')
+      respLower.includes('saved to shared memory') ||
+      respLower.includes('stored in hindsight')
     ) {
       return {
         content: userText.trim(),
