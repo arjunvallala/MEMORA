@@ -5,6 +5,8 @@ import path from 'path';
 dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
+const isServerless = Boolean(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+
 export const config = {
   port: parseInt(process.env.PORT || '4000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -38,5 +40,5 @@ export const config = {
   },
 
   defaultProjectId: process.env.DEFAULT_PROJECT_ID || 'payment-platform',
-  dbPath: path.resolve(process.cwd(), 'data/memora.sqlite')
+  dbPath: isServerless ? '/tmp/memora.sqlite' : path.resolve(process.cwd(), 'data/memora.sqlite')
 };
