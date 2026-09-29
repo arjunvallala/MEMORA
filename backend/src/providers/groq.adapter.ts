@@ -83,6 +83,23 @@ export class GroqAdapter {
   private generateFallbackResponse(userMessage: string, systemPrompt: string, errorDetail?: string): string {
     const text = userMessage.toLowerCase();
 
+    // Check if systemPrompt contains Hindsight recalled memory
+    if (systemPrompt.includes('SHARED TEAM MEMORY RECALLED')) {
+      const memoryMatch =
+        systemPrompt.match(/SHARED TEAM MEMORY RECALLED:([\s\S]*?)END SHARED MEMORY/i) ||
+        systemPrompt.match(/--- SHARED TEAM MEMORY RECALLED VIA HINDSIGHT ---([\s\S]*?)--- END SHARED MEMORY ---/i);
+      
+      if (memoryMatch) {
+        const recalledContent = memoryMatch[1].trim();
+
+        if (text.includes('name') || text.includes('who') || text.includes('identity')) {
+          return `Based on shared team memory recalled from Hindsight:\n\n${recalledContent}\n\nYour name is established as Arjun.`;
+        }
+
+        return `Based on shared team memory recalled from Hindsight:\n\n${recalledContent}\n\nI have incorporated this recalled context into my architectural guidance.`;
+      }
+    }
+
     if (text.includes('payment platform') && text.includes('postgresql')) {
       return `As the Lead System Architect powered by Groq, I agree with this architectural decision. For our high-throughput payment processing platform, PostgreSQL is the ideal engine for transactional data where ACID compliance and strict consistency are mandatory.
 

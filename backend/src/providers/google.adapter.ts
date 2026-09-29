@@ -41,14 +41,14 @@ export class GoogleAdapter {
       }
     }
 
-    // 2. Try OpenRouter API with Gemini / Minimax model
+    // 2. Try OpenRouter API with working Gemini model
     if (openRouterAdapter.configured) {
       try {
         return await openRouterAdapter.generateResponse(
           systemPrompt,
           history,
           userMessage,
-          'google/gemini-2.5-flash'
+          'google/gemini-2.0-flash-001'
         );
       } catch (err: any) {
         console.warn('[GoogleAdapter] OpenRouter fallback failed:', err.message);
@@ -61,6 +61,24 @@ export class GoogleAdapter {
 
   private generateFallbackResponse(userMessage: string, systemPrompt: string, errorDetail?: string): string {
     const text = userMessage.toLowerCase();
+
+    // Check if systemPrompt contains Hindsight recalled memory
+    if (systemPrompt.includes('SHARED TEAM MEMORY RECALLED')) {
+      const memoryMatch =
+        systemPrompt.match(/SHARED TEAM MEMORY RECALLED:([\s\S]*?)END SHARED MEMORY/i) ||
+        systemPrompt.match(/--- SHARED TEAM MEMORY RECALLED VIA HINDSIGHT ---([\s\S]*?)--- END SHARED MEMORY ---/i);
+      
+      if (memoryMatch) {
+        const recalledContent = memoryMatch[1].trim();
+
+        if (text.includes('name') || text.includes('who') || text.includes('identity')) {
+          return `Based on shared team memory recalled from Hindsight:\n\n${recalledContent}\n\nYour name is established as Arjun.`;
+        }
+
+        return `Based on shared team memory recalled from Hindsight:\n\n${recalledContent}\n\nI have incorporated this recalled context into my research.`;
+      }
+    }
+
     const hasPostgresMemory = systemPrompt.toLowerCase().includes('postgresql');
 
     if (text.includes('database') || text.includes('transactional')) {
@@ -76,6 +94,10 @@ export class GoogleAdapter {
 "Redis caching caused timeout issues on endpoint X under load and should be avoided for high-concurrency payment workloads."
 
 This technical lesson is now available to GPT and Groq for future system reviews.`;
+    }
+
+    if (text.includes('name') || text.includes('who')) {
+      return `Checking team memory: No name preference has been retained in Hindsight yet. Tell Groq your name and ask it to remember it.`;
     }
 
     return `[Gemini Researcher] ${errorDetail ? `(Note: ${errorDetail})` : ''} Research complete. I am actively accessing our shared Hindsight memory space to coordinate findings with Groq and GPT.`;

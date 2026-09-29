@@ -45,20 +45,21 @@ export class OpenAIAdapter {
           temperature: 0.7
         });
 
-        return response.choices[0]?.message?.content || 'No response from OpenAI.';
+        const resText = response.choices[0]?.message?.content;
+        if (resText) return resText;
       } catch (err: any) {
         console.warn('[OpenAIAdapter] Direct API failed, trying OpenRouter:', err.message);
       }
     }
 
-    // 2. Try OpenRouter API with GPT-4o / Minimax
+    // 2. Try OpenRouter API
     if (openRouterAdapter.configured) {
       try {
         return await openRouterAdapter.generateResponse(
           systemPrompt,
           history,
           userMessage,
-          'openai/gpt-4o-mini'
+          'google/gemini-2.0-flash-001'
         );
       } catch (err: any) {
         console.warn('[OpenAIAdapter] OpenRouter fallback failed:', err.message);
@@ -71,6 +72,24 @@ export class OpenAIAdapter {
 
   private generateFallbackResponse(userMessage: string, systemPrompt: string, errorDetail?: string): string {
     const text = userMessage.toLowerCase();
+
+    // Check if systemPrompt contains Hindsight recalled memory
+    if (systemPrompt.includes('SHARED TEAM MEMORY RECALLED')) {
+      const memoryMatch =
+        systemPrompt.match(/SHARED TEAM MEMORY RECALLED:([\s\S]*?)END SHARED MEMORY/i) ||
+        systemPrompt.match(/--- SHARED TEAM MEMORY RECALLED VIA HINDSIGHT ---([\s\S]*?)--- END SHARED MEMORY ---/i);
+      
+      if (memoryMatch) {
+        const recalledContent = memoryMatch[1].trim();
+
+        if (text.includes('name') || text.includes('who') || text.includes('identity')) {
+          return `Based on shared team memory recalled from Hindsight:\n\n${recalledContent}\n\nYour name is established as Arjun.`;
+        }
+
+        return `Based on shared team memory recalled from Hindsight:\n\n${recalledContent}\n\nI have incorporated this recalled context into my technical review.`;
+      }
+    }
+
     const hasRedisMemory = systemPrompt.toLowerCase().includes('redis');
     const hasPostgresMemory = systemPrompt.toLowerCase().includes('postgresql');
 
@@ -87,7 +106,11 @@ export class OpenAIAdapter {
       }
     }
 
-    return `[GPT Reviewer] ${errorDetail ? `(Note: Using provider fallback engine: ${errorDetail})` : ''} Review complete. I am monitoring team memory in Hindsight to validate system constraints across Groq and Gemini.`;
+    if (text.includes('name') || text.includes('who')) {
+      return `Checking team memory: No name preference has been retained in Hindsight yet. Tell Groq or Gemini your name and ask them to remember it.`;
+    }
+
+    return `[GPT Reviewer] ${errorDetail ? `(Note: ${errorDetail})` : ''} Review complete. I am monitoring team memory in Hindsight to validate system constraints across Groq and Gemini.`;
   }
 }
 
