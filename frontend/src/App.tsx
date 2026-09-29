@@ -14,6 +14,7 @@ import {
   fetchHealth,
   fetchProjects,
   createProject,
+  deleteProject,
   fetchConversation,
   clearConversation,
   sendChatMessage,
@@ -163,6 +164,22 @@ export function App() {
     }
   };
 
+  const handleDeleteProject = async (id: string) => {
+    try {
+      await deleteProject(id);
+      const updated = projects.filter((p) => p.id !== id);
+      setProjects(updated);
+      const nextProj = updated[0] || null;
+      if (nextProj) {
+        handleSelectProject(nextProj);
+      } else {
+        setCurrentProject(null);
+      }
+    } catch (err: any) {
+      alert('Failed to delete project: ' + err.message);
+    }
+  };
+
   const handleSendMessage = async (agentId: string, text: string) => {
     if (!currentProject) return;
 
@@ -232,6 +249,7 @@ export function App() {
         currentProject={currentProject}
         onSelectProject={handleSelectProject}
         onCreateProject={handleCreateProject}
+        onDeleteProject={handleDeleteProject}
         health={health}
         onOpenAskTeamMemory={() => setShowAskTeamModal(true)}
         onOpenGuidedDemo={() => setShowGuidedDemoModal(true)}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain, Layers, Activity, Settings, Plus, Play, RefreshCw, Cpu } from 'lucide-react';
+import { Brain, Layers, Activity, Settings, Plus, Play, RefreshCw, Cpu, Trash2 } from 'lucide-react';
 import { Project, SystemHealth } from '../../../shared/types';
 
 interface HeaderProps {
@@ -9,6 +9,7 @@ interface HeaderProps {
   currentProject: Project | null;
   onSelectProject: (p: Project) => void;
   onCreateProject: (name: string, desc: string) => void;
+  onDeleteProject?: (id: string) => void;
   health: SystemHealth | null;
   onOpenAskTeamMemory: () => void;
   onOpenGuidedDemo: () => void;
@@ -22,6 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentProject,
   onSelectProject,
   onCreateProject,
+  onDeleteProject,
   health,
   onOpenAskTeamMemory,
   onOpenGuidedDemo,
@@ -82,6 +84,20 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Plus size={16} />
             </button>
+
+            {currentProject && (
+              <button
+                onClick={() => {
+                  if (confirm(`Delete project "${currentProject.name}" and clear its Hindsight memory bank (${currentProject.bankId})?`)) {
+                    onDeleteProject?.(currentProject.id);
+                  }
+                }}
+                className="p-1 text-ink-400 hover:text-red-600 hover:bg-paper-200 rounded transition"
+                title="Delete Current Project"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
           </div>
         </div>
 

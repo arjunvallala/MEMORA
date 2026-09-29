@@ -301,6 +301,25 @@ router.post('/projects', async (req: Request, res: Response) => {
   }
 });
 
+router.delete('/projects/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const bankId = `project:${id}`;
+
+    await hindsightService.clearBank(bankId);
+
+    const db = await getDb();
+    await db.run('DELETE FROM conversations WHERE projectId = ?', [id]);
+    await db.run('DELETE FROM hindsight_events WHERE projectId = ?', [id]);
+    await db.run('DELETE FROM projects WHERE id = ?', [id]);
+
+    console.log(`[PROJECT DELETE] Deleted project ${id} and bank ${bankId}`);
+    res.json({ success: true, message: `Project ${id} deleted successfully.` });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /**
  * Reset Demo Endpoint
  */
