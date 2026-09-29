@@ -22,12 +22,12 @@ const AGENT_DEFINITIONS: Record<AgentId, AgentDefinition> = {
     provider: 'groq',
     role: 'System Architect',
     systemPrompt: `You are GROQ, the Lead System Architect on the engineering team.
-Your focus is ultra-fast system architecture, technology selection, consistency tradeoffs, and durable design decisions.
+Your focus is system architecture, technology selection, user preferences, consistency tradeoffs, and durable design decisions.
 You share a persistent memory bank (Hindsight) with Gemini (Researcher) and GPT (Reviewer).
 
 MEMORY DIRECTIVES:
 1. Always consult shared team memory retrieved from Hindsight.
-2. When the user establishes or confirms a durable architectural decision, confirm it explicitly and prepare it for retention in Hindsight.
+2. When the user establishes or confirms a durable decision, preference, rule, or identity (e.g. name, architectural choice), confirm it explicitly.
 3. Keep answers clear, technical, and precise.`
   },
   gemini: {
@@ -41,8 +41,8 @@ You share a persistent memory bank (Hindsight) with Groq (Architect) and GPT (Re
 
 MEMORY DIRECTIVES:
 1. Always consult shared team memory retrieved from Hindsight.
-2. If you recall an architectural decision made by Groq or GPT, reference it directly.
-3. When you discover or test a technical lesson or failure (e.g., Redis timeouts, load bottlenecks), highlight it as a key lesson for Hindsight.`
+2. If you recall a decision, user preference, name, or rule retained by Groq or GPT, reference it directly.
+3. When you discover or test a technical lesson or failure, highlight it as a key lesson for Hindsight.`
   },
   gpt: {
     id: 'gpt',
@@ -55,7 +55,7 @@ You share a persistent memory bank (Hindsight) with Groq (Architect) and Gemini 
 
 MEMORY DIRECTIVES:
 1. Always consult shared team memory retrieved from Hindsight.
-2. If you recall decisions or technical lessons from Groq or Gemini, use them to validate or warn against anti-patterns.
+2. If you recall decisions, user preferences, or technical lessons from Groq or Gemini, use them in your answer.
 3. Maintain high standards for scalability, risk prevention, and reliability.`
   }
 };
@@ -221,35 +221,70 @@ export class AgentRuntime {
     agentResponse: string,
     agentId: AgentId
   ): { content: string; category: MemoryCategory } | null {
-    const combined = `${userText}\n${agentResponse}`;
-    const lower = combined.toLowerCase();
+    const userLower = userText.toLowerCase();
+    const respLower = agentResponse.toLowerCase();
 
-    // Check for explicit "remember" or decision instructions
-    if (lower.includes('remember') || lower.includes('decided') || lower.includes('architectural decision') || lower.includes('avoid')) {
-      if (lower.includes('postgresql') || lower.includes('transactional')) {
-        return {
-          content: 'PostgreSQL selected for transactional data because strong consistency is important.',
-          category: 'decision'
-        };
-      }
-
-      if (lower.includes('redis') || lower.includes('timeout') || lower.includes('endpoint x')) {
-        return {
-          content: 'Redis caching caused timeout issues on endpoint X under load and should be avoided.',
-          category: 'failure'
-        };
-      }
+    // 1. User identity / name / preference extraction
+    if (
+      userLower.includes('my name is') ||
+      userLower.includes('name is') ||
+      userLower.includes('i am ') ||
+      userLower.includes('address me') ||
+      userLower.includes('call me')
+    ) {
+      return {
+        content: userText.trim(),
+        category: 'preference'
+      };
     }
 
-    // Generic rule: If prompt explicitly asks to remember something
-    if (userText.toLowerCase().startsWith('remember:') || userText.toLowerCase().includes('remember this')) {
-      const cleanContent = userText.replace(/remember\s*(this|:)?/gi, '').trim();
-      if (cleanContent.length > 10) {
-        return {
-          content: cleanContent,
-          category: 'lesson'
-        };
-      }
+    // 2. Explicit "remember" or rule instruction
+    if (userLower.includes('remember')) {
+      return {
+        content: userText.trim(),
+        category: userLower.includes('decide') || userLower.includes('select') ? 'decision' : 'lesson'
+      };
+    }
+
+    // 3. Architectural decisions
+    if (
+      userLower.includes('decided') ||
+      userLower.includes('selected') ||
+      userLower.includes('chose') ||
+      userLower.includes('use postgresql') ||
+      userLower.includes('architecture')
+    ) {
+      return {
+        content: userText.trim(),
+        category: 'decision'
+      };
+    }
+
+    // 4. Technical failures, warnings, or constraints
+    if (
+      userLower.includes('avoid') ||
+      userLower.includes('failed') ||
+      userLower.includes('timeout') ||
+      userLower.includes('issue') ||
+      userLower.includes('redis')
+    ) {
+      return {
+        content: userText.trim(),
+        category: 'failure'
+      };
+    }
+
+    // 5. Dynamic fallback: if response claims Hindsight memory was updated
+    if (
+      respLower.includes('hindsight') ||
+      respLower.includes('updated our shared memory') ||
+      respLower.includes('saved to memory') ||
+      respLower.includes('stored this')
+    ) {
+      return {
+        content: userText.trim(),
+        category: 'lesson'
+      };
     }
 
     return null;

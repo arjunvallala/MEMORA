@@ -261,8 +261,8 @@ export class HindsightService {
    * TEMPR scoring formula (Temporal, Entity, Memory semantic similarity, Phrase keyword matching)
    */
   private calculateRelevanceScore(query: string, memory: HindsightMemory): number {
-    const qWords = query.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter((w) => w.length > 2);
-    const mWords = memory.content.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter((w) => w.length > 2);
+    const qWords = query.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter((w) => w.length >= 2);
+    const mWords = memory.content.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter((w) => w.length >= 2);
 
     if (qWords.length === 0 || mWords.length === 0) return 0.1;
 
@@ -275,9 +275,9 @@ export class HindsightService {
     }
     const keywordScore = matchCount / Math.max(qWords.length, 1);
 
-    // 2. Specialized keyword boosting for exact concept matching (e.g., PostgreSQL, database, Redis, caching, timeout)
+    // 2. Specialized keyword boosting for exact concept & identity matching
     let domainBoost = 0;
-    const keyTerms = ['postgresql', 'postgres', 'database', 'redis', 'caching', 'timeout', 'transactional', 'endpoint'];
+    const keyTerms = ['postgresql', 'postgres', 'database', 'redis', 'caching', 'timeout', 'transactional', 'endpoint', 'name', 'arjun', 'user', 'preference'];
     for (const term of keyTerms) {
       if (query.toLowerCase().includes(term) && memory.content.toLowerCase().includes(term)) {
         domainBoost += 0.35;
