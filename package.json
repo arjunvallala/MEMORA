@@ -14,7 +14,14 @@
     "demo:reset": "npm run demo:reset --prefix backend"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.25",
     "concurrently": "^8.2.2",
     "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.3",
+    "serverless-http": "^3.2.0"
   }
 }
